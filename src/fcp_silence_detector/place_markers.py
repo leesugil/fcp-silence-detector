@@ -91,7 +91,7 @@ def place_in_asset_clip(asset_clip, silences: list[dict], fps: str, keyword: str
 
         # proof
         silence_duration = arithmetic.fcpsec2frac(end) - arithmetic.fcpsec2frac(start)
-        assert silence_duration > arithmetic.Fraction(0, 1), f"silence_duration is negative, this shoudn't happen. start: {start}, end: {end}, duration: {silence_duration}"
+        assert silence_duration > arithmetic.Fraction(0, 1), f"silence_duration is non-positive, this shoudn't happen. start: {start}, end: {end}, duration: {silence_duration}"
         if previous_end:
             silence_gap_from_previous = arithmetic.fcpsec2frac(start) - previous_end
             assert silence_gap_from_previous > 0
