@@ -61,7 +61,7 @@ def main():
     asset_clips = fcpxml_io.get_all_spine_asset_clips(root=root)
     print(f"fcpxml file: {xf}")
 
-    if args.buffer_duration and not args.buffer_start_duration:
+    if (args.buffer_start_duration is None) or (args.buffer_end_duration is None):
         args.buffer_start_duration = args.buffer_duration / 2
         args.buffer_end_duration = args.buffer_duration / 2
 

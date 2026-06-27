@@ -112,6 +112,8 @@ def buffer(silences, buffer_start_duration, buffer_end_duration, debug=False):
         ]
     """
     output = []
+    if debug:
+        print(f"buffer start: {buffer_start_duration}, end: {buffer_end_duration}")
     for i in silences:
         if i['duration'] > (buffer_start_duration + buffer_end_duration) + 0.1:
             i['start'] += buffer_end_duration
