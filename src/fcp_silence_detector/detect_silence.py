@@ -113,11 +113,13 @@ def buffer(silences, buffer_start_duration, buffer_end_duration, debug=False):
     """
     output = []
     for i in silences:
-        if i['duration'] > (buffer_start_duration + buffer_end_duration):
+        if i['duration'] > (buffer_start_duration + buffer_end_duration) + 0.1:
             i['start'] += buffer_end_duration
             i['end'] -= buffer_start_duration
             i['duration'] = i['end'] - i['start']
-        output.append(i)
+            assert i['duration'] > 0.1, f"Duration should remain positive after applying buffers. start: {i['start']} after adding buffer_end_duration {buffer_end_duration}, end: {i['end']} after subtracting buffer_start_duration {buffer_start_duration}, duration: {i['duration']}"
+            assert arithmetic.fcpsec2frac(arithmetic.float2fcpsec(i['duration'], "1/60")) > arithmetic.Fraction(0, 1), f"Are you sure {i['duration']} is long enough? It becomes {arithmetic.float2fcpsec(i['duration'], "1/60")}"
+            output.append(i)
 
     if debug:
         print(f"buffered polished silences: {output}")
@@ -146,6 +148,7 @@ def start_time_adjustment(silences, start_time_threshold: float=0.0, debug=False
             print(f"adjusting start {start} to 0.0")
         output[0]['start'] = 0.0
         output[0]['duration'] = output[0]['end'] - output[0]['start']
+        assert output[0]['duration'] > 0, f"The resulting duration is somehow non-positive: {output[0]['duration']}"
 
     return output
 
