@@ -99,10 +99,12 @@ def polish(silences, polish_duration=1, debug=False):
 
     return output
 
-def buffer(silences, buffer_duration=1, debug=False):
+def buffer(silences, buffer_start_duration, buffer_end_duration, debug=False):
     """
-    Gives more room for non-silence regions by shrinking the silent duration by buffer_duration.
-    The buffer_duration should be shorter than the duration from detect().
+    Gives more room for non-silence regions by shrinking the silent duration by the total buffer duration, i.e., extending the surrounding sound block length a little.
+    buffer_start_duration is the starting buffer of the sound block following a silence block, so it is used to shrink the end of the silence block.
+    buffer_end_duration is the ending buffer of the sound block that a silence block follows, so it is used to shrink the start of the silence block.
+    The total buffer duration (buffer_start_duration + buffer_end_duration) should be shorter than the duration from detect().
 
     silences = [
             { 'start': xx.xxx, 'end': yy.yyy, 'duration': zz.zzz },
@@ -111,9 +113,9 @@ def buffer(silences, buffer_duration=1, debug=False):
     """
     output = []
     for i in silences:
-        if i['duration'] > buffer_duration:
-            i['start'] += buffer_duration/2
-            i['end'] -= buffer_duration/2
+        if i['duration'] > (buffer_start_duration + buffer_end_duration):
+            i['start'] += buffer_end_duration
+            i['end'] -= buffer_start_duration
             i['duration'] = i['end'] - i['start']
         output.append(i)
 
@@ -176,11 +178,11 @@ def end_time_adjustment(silences, audio_length, end_time_threshold: float=0.0, d
 
 
 # detect silences
-def detect_silences(file_path, db, duration, polish_duration, buffer_duration, track, debug=False):
+def detect_silences(file_path, db, duration, polish_duration, buffer_start_duration, buffer_end_duration, track, debug=False):
     ffmpeg_silences = detect(file_path, db, duration, track, debug=debug)
     silences = parse(ffmpeg_silences, debug=debug)
     silences = polish(silences, polish_duration, debug=debug)
-    silences = buffer(silences, buffer_duration, debug=debug)
+    silences = buffer(silences, buffer_start_duration, buffer_end_duration, debug=debug)
     return silences
 
 # adjust ffmpeg-detected silent region duration to fcpxml asset-clip timeline duration
@@ -204,10 +206,10 @@ def adjust_to_fcpxml_timeline(silences, asset_clip, start_time_threshold: float=
 
     return silences
 
-def detect_silences_from_fcpxml_asset_clip(asset_clip, root, db, duration, polish_duration, buffer_duration, track, debug=False):
+def detect_silences_from_fcpxml_asset_clip(asset_clip, root, db, duration, polish_duration, buffer_start_duration, buffer_end_duration, track, debug=False):
     af = fcpxml_io.parse_resource_filepath_from_asset_clip(asset_clip=asset_clip, root=root, debug=debug)
     print(f"audio source media file: {af}")
     print(f"audio track: 0:{track}")
-    output = detect_silences(file_path=af, db=db, duration=duration, polish_duration=polish_duration, buffer_duration=buffer_duration, track=track, debug=debug)
+    output = detect_silences(file_path=af, db=db, duration=duration, polish_duration=polish_duration, buffer_start_duration=buffer_start_duration, buffer_end_duration=buffer_end_duration, track=track, debug=debug)
     return output
 

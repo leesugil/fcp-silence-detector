@@ -38,9 +38,11 @@ def main():
     |-|                     ||         |---|
     """
     parser.add_argument("--db", type=float, default=-35.0, help="Silence threshold in dB")
-    parser.add_argument("--duration", type=float, default=1.0, help="Minimum silence duration in seconds")
-    parser.add_argument("--polish-duration", type=float, default=0.5, help="Miminum non-silence duration in seconds")
-    parser.add_argument("--buffer-duration", type=float, default=0.4, help="Amount to reduce silence duration in seconds. (Should not be greater than duration)")
+    parser.add_argument("--duration", type=float, default=1.0, help="Minimum silence duration in seconds.")
+    parser.add_argument("--polish-duration", type=float, default=0.5, help="Miminum non-silence duration in seconds. Any sound lasting less than this time window will be considered as silence. (Popping noise filtering based on time interval)")
+    parser.add_argument("--buffer-duration", type=float, help="Amount to reduce silence duration in seconds. That is, this is the gap time between consecutive loud sound blocks. Should not be greater than '--duration' because '--duration' is the theoretical shortest time interval between consecutive sound blocks, so it is possible to have a back-to-back sound blocks with the '--duration' distance, and adding a buffer length longer than this distance will push these blocks away ruining the timeline.")
+    parser.add_argument("--buffer-start-duration", type=float, default=0.2, help="The usual '--buffer-duration' adds half the duration to both the start and end of a sound block (equal buffer length). This option is just to add a single buffer to the start only.")
+    parser.add_argument("--buffer-end-duration", type=float, default=0.2, help="The usual '--buffer-duration' adds half the duration to both the start and end of a sound block (equal buffer length). This option is just to add a single buffer to the end only.")
     # silence detection from the beginning to the end
     parser.add_argument("--start-time-threshold", type=float, default=0.0, help="When ffmpeg detects silence, it might not capture silence from 0.0s of the audio. This ensures 'If silence starts within the first x seconds, assume the silence started from the beginning.")
     parser.add_argument("--end-time-threshold", type=float, default=0.0, help="When ffmpeg detects silence, it might not capture silence from 0.0s of the audio. This ensures 'If silence starts within the first x seconds, assume the silence started from the beginning.")
@@ -59,10 +61,14 @@ def main():
     asset_clips = fcpxml_io.get_all_spine_asset_clips(root=root)
     print(f"fcpxml file: {xf}")
 
+    if args.buffer_duration:
+        args.buffer_start_duration = args.buffer_duration / 2
+        args.buffer_end_duration = args.buffer_duration / 2
+
     # Detect silence in <asset-clip>s in the Project Timeline
     for asset_clip in asset_clips:
         # Silence detection using ffmpeg
-        silences = detect_silence.detect_silences_from_fcpxml_asset_clip(asset_clip=asset_clip, root=root, db=args.db, duration=args.duration, polish_duration=args.polish_duration, buffer_duration=args.buffer_duration, track=args.track, debug=args.debug)
+        silences = detect_silence.detect_silences_from_fcpxml_asset_clip(asset_clip=asset_clip, root=root, db=args.db, duration=args.duration, polish_duration=args.polish_duration, buffer_start_duration=args.buffer_start_duration, buffer_end_duration=args.buffer_end_duration, track=args.track, debug=args.debug)
 
         # Adjust first and last silent regions to fit to FCPXML Project Timeline.
         silences = detect_silence.adjust_to_fcpxml_timeline(silences=silences, asset_clip=asset_clip, start_time_threshold=args.start_time_threshold, end_time_threshold=args.end_time_threshold, fps=fps, debug=args.debug)
